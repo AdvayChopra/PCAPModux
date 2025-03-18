@@ -8,6 +8,8 @@ namespace PCAPModux
 {
     public partial class Form1 : Form
     {
+        private int packetCount = 0; // Counter for packets
+
         public Form1()
         {
             InitializeComponent();
@@ -26,17 +28,18 @@ namespace PCAPModux
                     captureDevice.OnPacketArrival += new PacketArrivalEventHandler(OnPacketArrival);
                     captureDevice.Open();
 
-                    outputTextBox.AppendText("Reading packets from PCAP file..." + Environment.NewLine);
+                    packetTreeView.Nodes.Clear();
+                    packetTreeView.Nodes.Add("Reading packets from PCAP file...");
 
                     // Start capturing packets
                     captureDevice.Capture();
 
-                    outputTextBox.AppendText("PCAP file reading completed." + Environment.NewLine);
+                    packetTreeView.Nodes.Add("PCAP file reading completed.");
                 }
             }
             catch (Exception ex)
             {
-                outputTextBox.AppendText($"Error: {ex.Message}" + Environment.NewLine);
+                packetTreeView.Nodes.Add($"Error: {ex.Message}");
             }
         }
 
@@ -51,15 +54,36 @@ namespace PCAPModux
             var arpPacket = packet.Extract<ArpPacket>();
             if (arpPacket != null)
             {
-                outputTextBox.Invoke(new Action(() =>
+                packetCount++; // Increment packet count
+
+                string senderMac = arpPacket.SenderHardwareAddress.ToString();
+                string targetMac = arpPacket.TargetHardwareAddress.ToString();
+                string senderVendor = MacAddressVendorLookup.GetVendorName(senderMac);
+                string targetVendor = MacAddressVendorLookup.GetVendorName(targetMac);
+
+                var packetNode = new TreeNode($"ARP Packet {packetCount}");
+                packetNode.Nodes.Add($"Timestamp: {rawPacket.Timeval.Date}");
+                packetNode.Nodes.Add($"Packet Length: {rawPacket.Data.Length} bytes");
+                packetNode.Nodes.Add($"Sender MAC: {senderMac} ({senderVendor})");
+                packetNode.Nodes.Add($"Sender IP: {arpPacket.SenderProtocolAddress}");
+                packetNode.Nodes.Add($"Target MAC: {targetMac} ({targetVendor})");
+                packetNode.Nodes.Add($"Target IP: {arpPacket.TargetProtocolAddress}");
+                packetNode.Nodes.Add($"Opcode: {arpPacket.Operation}");
+                packetNode.Nodes.Add($"Hardware Type: {arpPacket.HardwareAddressType}");
+                packetNode.Nodes.Add($"Protocol Type: {arpPacket.ProtocolAddressType}");
+                packetNode.Nodes.Add($"Hardware Size: {arpPacket.HardwareAddressLength} bytes");
+                packetNode.Nodes.Add($"Protocol Size: {arpPacket.ProtocolAddressLength} bytes");
+
+                // Extract and format ARP request information
+                if (arpPacket.Operation == ArpOperation.Request)
                 {
-                    outputTextBox.AppendText("---- ARP Packet ----" + Environment.NewLine);
-                    outputTextBox.AppendText($"Timestamp: {rawPacket.Timeval.Date}" + Environment.NewLine);
-                    outputTextBox.AppendText($"Sender MAC: {arpPacket.SenderHardwareAddress}" + Environment.NewLine);
-                    outputTextBox.AppendText($"Sender IP: {arpPacket.SenderProtocolAddress}" + Environment.NewLine);
-                    outputTextBox.AppendText($"Target MAC: {arpPacket.TargetHardwareAddress}" + Environment.NewLine);
-                    outputTextBox.AppendText($"Target IP: {arpPacket.TargetProtocolAddress}" + Environment.NewLine);
-                    outputTextBox.AppendText("---------------------" + Environment.NewLine + Environment.NewLine);
+                    string arpInfo = $"Info: Who has {arpPacket.TargetProtocolAddress}? Tell {arpPacket.SenderProtocolAddress}";
+                    packetNode.Nodes.Add(arpInfo);
+                }
+
+                packetTreeView.Invoke(new Action(() =>
+                {
+                    packetTreeView.Nodes.Add(packetNode);
                 }));
             }
         }
