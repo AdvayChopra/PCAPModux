@@ -4,6 +4,7 @@
     {
         private System.ComponentModel.IContainer components = null;
         private System.Windows.Forms.Button startButton;
+        private System.Windows.Forms.Button showMetricsButton;
         private System.Windows.Forms.TreeView packetTreeView;
 
         protected override void Dispose(bool disposing)
@@ -18,6 +19,7 @@
         private void InitializeComponent()
         {
             this.startButton = new System.Windows.Forms.Button();
+            this.showMetricsButton = new System.Windows.Forms.Button();
             this.packetTreeView = new System.Windows.Forms.TreeView();
             this.SuspendLayout();
             // 
@@ -27,16 +29,26 @@
             this.startButton.Name = "startButton";
             this.startButton.Size = new System.Drawing.Size(75, 23);
             this.startButton.TabIndex = 0;
-            this.startButton.Text = "Start";
+            this.startButton.Text = "Open File";
             this.startButton.UseVisualStyleBackColor = true;
             this.startButton.Click += new System.EventHandler(this.startButton_Click);
+            // 
+            // showMetricsButton
+            // 
+            this.showMetricsButton.Location = new System.Drawing.Point(93, 12);
+            this.showMetricsButton.Name = "showMetricsButton";
+            this.showMetricsButton.Size = new System.Drawing.Size(100, 23);
+            this.showMetricsButton.TabIndex = 1;
+            this.showMetricsButton.Text = "Show Metrics";
+            this.showMetricsButton.UseVisualStyleBackColor = true;
+            this.showMetricsButton.Click += new System.EventHandler(this.showMetricsButton_Click);
             // 
             // packetTreeView
             // 
             this.packetTreeView.Location = new System.Drawing.Point(12, 41);
             this.packetTreeView.Name = "packetTreeView";
             this.packetTreeView.Size = new System.Drawing.Size(776, 397);
-            this.packetTreeView.TabIndex = 1;
+            this.packetTreeView.TabIndex = 2;
             // 
             // Form1
             // 
@@ -44,6 +56,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 450);
             this.Controls.Add(this.packetTreeView);
+            this.Controls.Add(this.showMetricsButton);
             this.Controls.Add(this.startButton);
             this.Name = "Form1";
             this.Text = "PCAP Reader";
