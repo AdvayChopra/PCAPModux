@@ -1,16 +1,16 @@
 using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
-using PacketDotNet;
+using System.Text;
 using SharpPcap;
 using SharpPcap.LibPcap;
+using PacketDotNet;
 
 namespace PCAPModux
 {
     public partial class Form1 : Form
     {
         private int packetCount = 0; // Counter for packets
-        private Dictionary<string, string> requesters = new Dictionary<string, string>(); // MAC/IP addresses making requests
+        private Dictionary<string, List<string>> requesters = new Dictionary<string, List<string>>(); // MAC/IP addresses making requests
         private Dictionary<string, string> responders = new Dictionary<string, string>(); // MAC/IP addresses responding
 
         public Form1()
@@ -62,6 +62,29 @@ namespace PCAPModux
             var ethernetPacket = packet.Extract<EthernetPacket>();
             if (ethernetPacket == null) return;
 
+            // Check if the packet is an ARP packet
+            var arpPacket = packet.Extract<ArpPacket>();
+            if (arpPacket != null)
+            {
+                HandleArpPacket(packet, rawPacket);
+                return;
+            }
+
+            var ipPacket = packet.Extract<IPPacket>();
+            if (ipPacket == null) return;
+
+            var udpPacket = packet.Extract<UdpPacket>();
+            if (udpPacket == null) return;
+
+            // Check if the packet is a DNS packet
+            if (udpPacket.DestinationPort == 53 || udpPacket.SourcePort == 53)
+            {
+                HandleDnsPacket(udpPacket.PayloadData, rawPacket);
+            }
+        }
+
+        private void HandleArpPacket(Packet packet, RawCapture rawPacket)
+        {
             var arpPacket = packet.Extract<ArpPacket>();
             if (arpPacket != null)
             {
@@ -79,7 +102,11 @@ namespace PCAPModux
                 {
                     if (!requesters.ContainsKey(senderMac))
                     {
-                        requesters[senderMac] = senderIp;
+                        requesters[senderMac] = new List<string>();
+                    }
+                    if (!requesters[senderMac].Contains(senderIp))
+                    {
+                        requesters[senderMac].Add(senderIp);
                     }
                 }
                 else if (arpPacket.Operation == ArpOperation.InArpReply)
@@ -117,12 +144,41 @@ namespace PCAPModux
             }
         }
 
+        private void HandleDnsPacket(byte[] payloadData, RawCapture rawPacket)
+        {
+            packetCount++; // Increment packet count
+
+            var packetNode = new TreeNode($"DNS Packet {packetCount}");
+            packetNode.Nodes.Add($"Timestamp: {rawPacket.Timeval.Date}");
+            packetNode.Nodes.Add($"Packet Length: {rawPacket.Data.Length} bytes");
+
+            // Manually parse DNS packet
+            int transactionId = (payloadData[0] << 8) | payloadData[1];
+            int flags = (payloadData[2] << 8) | payloadData[3];
+            int questionCount = (payloadData[4] << 8) | payloadData[5];
+            int answerCount = (payloadData[6] << 8) | payloadData[7];
+            int authorityCount = (payloadData[8] << 8) | payloadData[9];
+            int additionalCount = (payloadData[10] << 8) | payloadData[11];
+
+            packetNode.Nodes.Add($"Transaction ID: {transactionId}");
+            packetNode.Nodes.Add($"Flags: {flags}");
+            packetNode.Nodes.Add($"Questions: {questionCount}");
+            packetNode.Nodes.Add($"Answers: {answerCount}");
+            packetNode.Nodes.Add($"Authority RRs: {authorityCount}");
+            packetNode.Nodes.Add($"Additional RRs: {additionalCount}");
+
+            packetTreeView.Invoke(new Action(() =>
+            {
+                packetTreeView.Nodes.Add(packetNode);
+            }));
+        }
+
         private void showMetricsButton_Click(object sender, EventArgs e)
         {
             string metrics = "Requesters:\n";
             foreach (var requester in requesters)
             {
-                metrics += $"MAC: {requester.Key}, IP: {requester.Value}\n";
+                metrics += $"MAC: {requester.Key}, IPs: {string.Join(", ", requester.Value)}\n";
             }
 
             metrics += "\nResponders:\n";

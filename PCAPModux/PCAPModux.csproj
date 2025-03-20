@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="PacketDotNet" Version="1.4.7" />
+    <PackageReference Include="Pcap.Net.x86" Version="1.0.4.1" />
     <PackageReference Include="SharpPcap" Version="6.3.0" />
   </ItemGroup>
 
