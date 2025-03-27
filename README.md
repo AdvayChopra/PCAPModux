@@ -1,0 +1,1 @@
+The code is a C# Windows Forms application that reads and processes packets from a PCAP file. It uses the SharpPcap libraries to capture and parse network packets. The application provides a graphical interface to open a PCAP file, capture packets, and display aggregated metrics for ARP and DNS packets.
